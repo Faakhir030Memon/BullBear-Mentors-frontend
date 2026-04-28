@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import CourseDetails from './pages/CourseDetails';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import VerifyPayment from './pages/VerifyPayment';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -45,6 +46,11 @@ function App() {
                         <Route path="/dashboard" element={
                             <ProtectedRoute>
                                 <UserDashboard />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="/verify-payment" element={
+                            <ProtectedRoute>
+                                <VerifyPayment />
                             </ProtectedRoute>
                         } />
                         
