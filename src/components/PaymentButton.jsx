@@ -1,75 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 const PaymentButton = ({ course }) => {
     const { user } = useAuth();
-
-    const loadScript = (src) => {
-        return new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = src;
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-        });
-    };
+    const [loading, setLoading] = useState(false);
 
     const handlePayment = async () => {
-        const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
-
-        if (!res) {
-            alert('Razorpay SDK failed to load. Are you online?');
-            return;
-        }
-
+        setLoading(true);
         try {
-            // Create order on backend
-            const { data: order } = await axios.post('http://localhost:5000/api/orders/create', {
+            // Create order and get Safepay checkout URL
+            const { data } = await axios.post('http://localhost:5000/api/orders/create', {
                 amount: course.price,
                 courseId: course._id,
                 userId: user._id
             });
 
-            const options = {
-                key: 'YOUR_RAZORPAY_KEY_ID', // Enter your Key ID here
-                amount: order.amount,
-                currency: "INR",
-                name: "BullBear Mentors",
-                description: `Purchase ${course.title}`,
-                image: "https://example.com/logo.png",
-                order_id: order.id,
-                handler: async function (response) {
-                    try {
-                        const verifyRes = await axios.post('http://localhost:5000/api/orders/verify', response);
-                        if (verifyRes.data.message === 'Payment verified successfully') {
-                            alert('Enrolled successfully!');
-                            window.location.href = '/dashboard';
-                        }
-                    } catch (error) {
-                        alert('Verification failed');
-                    }
-                },
-                prefill: {
-                    name: user.name,
-                    email: user.email,
-                },
-                theme: {
-                    color: "#1E3A8A",
-                },
-            };
-
-            const paymentObject = new window.Razorpay(options);
-            paymentObject.open();
+            if (data.checkoutUrl) {
+                // Redirect to Safepay Checkout
+                window.location.href = data.checkoutUrl;
+            } else {
+                alert('Could not initiate payment. Please try again.');
+            }
         } catch (error) {
             console.error('Payment error', error);
             alert('Something went wrong with the payment');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <button className="btn-primary" onClick={handlePayment} style={{ width: '100%' }}>
-            Buy Now for PKR {course.price}
+        <button 
+            className="btn-primary" 
+            onClick={handlePayment} 
+            disabled={loading}
+            style={{ width: '100%', opacity: loading ? 0.7 : 1 }}
+        >
+            {loading ? 'Processing...' : `Buy Now for PKR ${course.price}`}
         </button>
     );
 };
